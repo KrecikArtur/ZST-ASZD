@@ -1,3 +1,5 @@
+const on = 0;
+const off = 1;
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -5,6 +7,7 @@ const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const Gpio = require('onoff').Gpio;
 const bell = new Gpio(529, 'out');
+bell.writeSync(off);
 const LCDSCREEN = require('raspberrypi-liquid-crystal');
 const lcd = new LCDSCREEN( 1, 0x27, 16, 2 );
 lcd.beginSync();
@@ -25,8 +28,6 @@ app.listen(3000, () => {
   console.log(`Aktywacja Systemu: ${new Date().toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}`);
 });
 
-const on = 0;
-const off = 1;
 let cyklpracy = 0;
 let weekday = '';
 let bellhours = [];
@@ -64,7 +65,7 @@ function Reload() {
 } // Przeladowanie stanu programu
 
 function buttonpressed(button) {
-  const modes = ["    ANULOWAC","    DZWONEK?"," ALARM POZAROWY"," ALARM BARYKADA"];
+  const modes = ["ANULUJ","DZWONEK","ALARM POZAROWY","ALARM BARYKADA"];
   db.get("SELECT status FROM api_belldata LIMIT 1", [], (err, row) => {
     const workingcycle = cyklpracy;
     if (displaying==modes[button]) {
@@ -166,7 +167,7 @@ function StartBells() {
         display("     ALARM!", "    BARYKADA");
         break;
       default:
-        display("!! URUCHOMIC? !!", mode);
+        display(mode, "WYKONAC?");
         break;
     } // wyswietlanie wiadomosci 
   function display(line1, line2) {
