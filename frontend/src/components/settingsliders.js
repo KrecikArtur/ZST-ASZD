@@ -4,7 +4,7 @@ import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import { showToast } from './Toaster';
 import axios from "axios";
 
-const apiBase = `http://${window.location.hostname}:8080`;
+const apiBase = `http://${window.location.hostname}/api`;
 
 const Sliders = () => {
   const [bellNormal, setBellNormal] = useState(0);
@@ -15,7 +15,7 @@ const Sliders = () => {
 
   const loadValues = () => {
     axios
-      .get(`${apiBase}/api/belldata/1/`)
+      .get(`${apiBase}/belldata/1/`)
       .then((res) => {
         const data = res.data;
         if (Array.isArray(data.bells)) {
@@ -37,13 +37,13 @@ const Sliders = () => {
 
   const saveAll = () => {
     axios
-      .patch(`${apiBase}/api/belldata/1/`, {
+      .patch(`${apiBase}/belldata/1/`, {
         bells: [bellNormal, bellShort],
         fire: [fireLength, fireGap, fireGap2],
       })
       .then(() => {
         showToast("Zapisano ustawienia.", "success");
-        fetch('/api/reload', {
+        fetch('/bell/reload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         });

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { showToast } from './components/Toaster';
 import { setTokens, getAccessToken, getRefreshToken, refreshAccessToken } from "./components/Login-Sys";
 import Clock from './components/Clock';
-const apiBase = `http://${window.location.hostname}:8080`;
+const apiBase = `http://${window.location.hostname}/api`;
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -16,7 +16,7 @@ function Login({ onLogin }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(`${apiBase}/api/token/`, {
+      const res = await axios.post(`${apiBase}/token/`, {
         username,
         password,
       });

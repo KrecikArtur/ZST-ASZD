@@ -5,11 +5,9 @@ import { getAccessToken, isTokenExpired, refreshAccessToken } from "./Login-Sys"
 
 function RequireAuth({ children }) {
   const access = getAccessToken();
-
   if (!access) {
     return <Navigate to="/login" replace />;
   }
-
   if (isTokenExpired(access)) {
     refreshAccessToken();
   }

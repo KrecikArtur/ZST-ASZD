@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Form, Spinner } from 'react-bootstrap';
 import { showToast } from './Toaster';
 import axios from 'axios';
-const apiBase = `http://${window.location.hostname}:8080`;
+const apiBase = `http://${window.location.hostname}/api`;
 
 const DAYS = [
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
@@ -45,7 +45,7 @@ const DaySelector = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${apiBase}/api/belldata/1/`)
+    axios.get(`${apiBase}/belldata/1/`)
       .then(res => {
         setData(res.data);
         setLoading(false);
@@ -58,12 +58,12 @@ const DaySelector = () => {
 
   const handleChange = (dayKey, value) => {
     setData(prev => ({ ...prev, [dayKey]: value }));
-    axios.patch(`${apiBase}/api/belldata/1/`, {
+    axios.patch(`${apiBase}/belldata/1/`, {
       [dayKey]: value,
     })
     .then(() => {
       showToast("Tryb dzwonienia zaktualizowany!", "success")
-      fetch('/api/reload', {
+      fetch('/bell/reload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       })

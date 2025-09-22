@@ -11,12 +11,12 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter()
-router.register(r'belldata', BellDataViewSet, basename='daydata')
+router.register(r'belldata', BellDataViewSet, basename='belldata')
 router.register(r'schedule', ScheduleViewSet, basename='schedule')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-    path('api/token/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
+    path('', include(router.urls)),
+    path('token/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
 ]

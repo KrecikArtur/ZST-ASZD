@@ -13,7 +13,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>}/>
-        <Route path="/planedit/:option" element={<RequireAuth><Plan /></RequireAuth>}/>
+        <Route path="/planedit/:option" element={<RequireAuth><Plan /></RequireAuth>} />
         <Route path="/options" element={<RequireAuth><Settings /></RequireAuth>}/>
         {/* <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>}/> */}
         <Route path="*" element={<Navigate to="/login" replace />} />

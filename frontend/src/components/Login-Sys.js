@@ -2,7 +2,7 @@
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 
-const apiBase = `http://${window.location.hostname}:8080`;
+const apiBase = `http://${window.location.hostname}/api`;
 
 export function setTokens(access, refresh) {
   localStorage.setItem("access", access);
@@ -37,9 +37,12 @@ export function isTokenExpired(token) {
 
 export async function refreshAccessToken() {
   const refresh = getRefreshToken();
-  if (!refresh) return false;
+  if (!refresh) {
+    logout();
+    return false;
+  }
   try {
-    const res = await axios.post(`${apiBase}/api/token/refresh/`, {
+    const res = await axios.post(`${apiBase}/token/refresh/`, {
       refresh: refresh
     });
     setTokens(res.data.access);

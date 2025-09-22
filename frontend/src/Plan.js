@@ -7,16 +7,18 @@ import Sidebar from './components/Sidebar';
 import PlanSelector from './components/PlanSelector';
 import HourEditor from './components/HourEditor';
 
-const apiBase = `http://${window.location.hostname}:8080`;
+const apiBase = `http://${window.location.hostname}/api`;
 
 const Plan = () => {
   const { option } = useParams();
   const [hours, setHours] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [newHour, setNewHour] = useState('');
+  const [newPrebell, setNewPrebell] = useState(false);
+  const AddPopup = () => setShowModal(true);
 
   const ScheduleReload = () => {
-    axios.get(`${apiBase}/api/schedule/?option=${option}`)
+    axios.get(`${apiBase}/schedule/?option=${option}`)
       .then(res => {
         setHours(res.data);
       })
@@ -29,22 +31,18 @@ const Plan = () => {
 
   const HourRemoved = (hourObj) => {
     setHours(hours.filter(h => h !== hourObj));
+    showToast('Usunięto godzinę.', 'danger');
   };
 
   const ScheduleSave = () => {
-    axios.put(`${apiBase}/api/schedule/${option}/`, hours)
+    axios.put(`${apiBase}/schedule/${option}/`, hours)
       .catch(err => console.error('Save Error', err));
-      fetch('/api/reload', {
+      fetch('/bell/reload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         });
     showToast('Zapisano godziny.', 'success');
   };
-
-  const AddPopup = () => setShowModal(true);
-
-  // shit start
-  const [newPrebell, setNewPrebell] = useState(false);
 
   const handleAddConfirm = () => {
     if (!hours.some(h => h.hour === newHour)) {
@@ -54,14 +52,13 @@ const Plan = () => {
       ].sort((a, b) => a.hour.localeCompare(b.hour));
       setHours(updated);
       setShowModal(false);
-      setNewHour('08:00');
+      setNewHour('12:00');
       setNewPrebell(false);
+      showToast('Dodano godzinę.', 'success');
     } else {
-      alert('Godzina już istnieje.');
+      showToast('Godzina już istnieje!', 'danger');
     }
   };
-
-  //shit end
 
   return (
     <Container fluid>
@@ -108,58 +105,40 @@ const Plan = () => {
             <Modal.Header closeButton className="bg-primary-subtle border border-primary-subtle">
               <Modal.Title className="text-primary fw-bold">Dodaj nową godzinę</Modal.Title>
             </Modal.Header>
-            <Modal.Body className="bg-secondary-subtle border border-primary-subtle">
-              <Form>
-                <Row className="mb-3 text-center">
-                  <Col>
-                    <Form.Label className="fw-semibold">Godzina</Form.Label>
-                    <Form.Select
-                      value={newHour.split(":")[0] || ""}
-                      onChange={(e) => setNewHour(`${e.target.value}:${newHour.split(":")[1] || "00"}`)}
-                    >
-                      {[...Array(24).keys()].map((h) => (
-                        <option key={h} value={String(h).padStart(2, "0")}>
-                          {String(h).padStart(2, "0")}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Col>
-                  <Col>
-                    <Form.Label className="fw-semibold">Minuty</Form.Label>
-                    <Form.Select
-                      value={newHour.split(":")[1] || ""}
-                      onChange={(e) => setNewHour(`${newHour.split(":")[0] || "00"}:${e.target.value}`)}
-                    >
-                      {[...Array(60).keys()].map((m) => (
-                        <option key={m} value={String(m).padStart(2, "0")}>
-                          {String(m).padStart(2, "0")}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Col>
-                </Row>
 
-                <Row>
-                  <Col>
-                    <Form.Check 
-                      type="switch"
-                      id="prebell-switch"
-                      label="(Lekcja) Z dodatkowym krótkim dzwonkiem?"
-                      checked={newPrebell}
-                      onChange={(e) => setNewPrebell(e.target.checked)}
-                    />
-                  </Col>
-                </Row>
+            <Modal.Body className="bg-secondary-subtle border border-primary-subtle">
+              <Form className="d-flex justify-content-center flex-column align-items-center text-center">
+                <Form.Group className="mb-4 w-100">
+                  <Form.Label className="fw-semibold">Godzina</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={newHour}
+                    onChange={(e) => setNewHour(e.target.value)}
+                    step="60"
+                    className="w-50 mx-auto text-center fw-bold border border-primary-subtle bg-dark"
+                  />
+                </Form.Group>
+
+                <Form.Group className="w-100">
+                  <Form.Check
+                    type="switch"
+                    id="prebell-switch"
+                    label="Z dodatkowym krótkim dzwonkiem? (Lekcja)"
+                    checked={newPrebell}
+                    onChange={(e) => setNewPrebell(e.target.checked)}
+                    className="fw-semibold"
+                  />
+                </Form.Group>
               </Form>
             </Modal.Body>
             <Modal.Footer className="bg-secondary-subtle border border-primary-subtle">
-              <Button 
+              <Button
                 className="bg-danger-subtle border border-danger text-danger"
                 onClick={() => setShowModal(false)}
               >
                 Anuluj
               </Button>
-              <Button 
+              <Button
                 className="bg-success-subtle border border-success text-success"
                 onClick={handleAddConfirm}
               >
@@ -167,9 +146,6 @@ const Plan = () => {
               </Button>
             </Modal.Footer>
           </Modal>
-
-
-
         </Col>
       </Row>
     </Container>

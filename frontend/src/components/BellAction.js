@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Row, Col, Button, Modal } from 'react-bootstrap';
 import axios from 'axios';
 
-const apiBase = `http://${window.location.hostname}:8080`;
+const apiBase = `http://${window.location.hostname}/api`;
 
 const BellAction = () => {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -18,11 +18,11 @@ const BellAction = () => {
   const handleConfirm = () => {
     if (pendingAction === null) return;
 
-    axios.patch(`${apiBase}/api/belldata/1/`, {
+    axios.patch(`${apiBase}/belldata/1/`, {
       status: pendingAction,
     })
     .then(() => {
-      return fetch('/api/reload', {
+      return fetch('/bell/reload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });

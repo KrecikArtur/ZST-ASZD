@@ -12,7 +12,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 httponly=True,
                 secure=True,
                 samesite="Strict",
-                max_age=7 * 24 * 60 * 60
+                max_age=1 * 60 * 60
             )
             del response.data["refresh"]
         return response
