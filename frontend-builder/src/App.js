@@ -15,7 +15,6 @@ function App() {
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>}/>
         <Route path="/planedit/:option" element={<RequireAuth><Plan /></RequireAuth>} />
         <Route path="/options" element={<RequireAuth><Settings /></RequireAuth>}/>
-        {/* <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>}/> */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       <Toaster />
