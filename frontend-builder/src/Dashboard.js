@@ -1,33 +1,29 @@
-import React from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import { Row, Col } from 'react-bootstrap';
 import Sidebar from './components/Sidebar';
-import WeekModes from './components/WeekModes';
-import Clock from './components/Clock';
-import BellAction from './components/BellAction';
+import ModeSelector from './components/ModeSelector';
+import ActionButtons from './components/ActionButtons';
 
-const Dashboard = () => (
-  <Container fluid>
-    <Row>
-      <Col md={2} className="bg-primary-subtle border border-primary-subtle rounded">
-        <Sidebar />
-      </Col>
-      <Col md={10} className="p-3 bg-dark text-white vh-100">
-        <Row className="justify-content-center mb-3">
-          <Col md="3">
-            <Clock />
-          </Col>
-        </Row>
-        <hr />
-        <Row className="justify-content-center text-center mb-3">
-          <Col md="6">
-        <WeekModes />
-          </Col>
-        </Row>
-        <hr />
-        <BellAction />
-      </Col>
-    </Row>
-  </Container>
-);
+const Dashboard = () => {
+  const [time, setTime] = useState(new Date());
 
+  useEffect(() => {
+    const intervalId = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  return(
+    <Sidebar>
+      <Row className="justify-content-center mb-3"><Col md="3"><div className="bg-secondary-subtle border border-primary-subtle text-white p-3 rounded text-center">
+        <h3 className="text-primary">{time.toLocaleDateString('pl-PL')}</h3>
+        <h2 className='text-primary'>{time.toLocaleDateString('pl-PL', { weekday: 'long' }).charAt(0).toUpperCase() + time.toLocaleDateString('pl-PL', { weekday: 'long' }).slice(1)}</h2>
+        <h3 className='text-primary'>{time.toLocaleTimeString('pl-PL')}</h3>
+      </div></Col></Row>
+      <hr />
+      <Row className="justify-content-center text-center mb-3"><Col md="6"><ModeSelector /></Col></Row>
+      <hr />
+      <ActionButtons />
+    </Sidebar>
+  );
+}
 export default Dashboard;

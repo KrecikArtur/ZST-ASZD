@@ -1,5 +1,5 @@
 import React from "react";
-import { Container, Row, Button } from "react-bootstrap";
+import { Row, Button } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const PlanSelector = () => {
@@ -18,7 +18,7 @@ const PlanSelector = () => {
   };
 
   return (
-      <div className="w-100 bg-secondary-subtle border border-primary-subtle p-4 rounded text-center">
+      <div className="w-100 bg-primary-subtle border border-primary-subtle p-4 rounded text-center">
         <Row className="justify-content-center gap-5">
           {plans.map((plan) => {
             const isActive = location.pathname === `/planedit/${plan.path}`;
@@ -29,7 +29,7 @@ const PlanSelector = () => {
                 className={`fs-4 py-4 col-md-2 border rounded ${
                   isActive
                     ? "border-success text-success bg-success-subtle shadow"
-                    : "bg-info-subtle border-info text-info"
+                    : "bg-secondary-subtle border-info text-info"
                 }`}
               >
                 {plan.label}
