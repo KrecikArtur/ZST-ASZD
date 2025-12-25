@@ -11,12 +11,10 @@ bell.writeSync(off);
 const LCDSCREEN = require('raspberrypi-liquid-crystal');
 const lcd = new LCDSCREEN( 1, 0x27, 16, 2 );
 lcd.beginSync();
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 const db = new sqlite3.Database(path.join(__dirname, '../backend/db.sqlite3'));
-
 app.get(/.*/, (req, res) => {res.sendFile(path.join(__dirname, 'public', 'index.html'));});
 app.post('/bell/reload', (req, res) => {
   res.json({ success: true });
@@ -173,11 +171,9 @@ function ScreenMessage() {
 } // Obsluga wyswietlacza LCD
 
 setTimeout(() => {
-      setInterval(() => {
-        ScreenMessage();
-      }, 30000);
-      ScreenMessage();
-  }, 60000 - new Date().getSeconds() * 1000); //Cykl wyswietlacza
+  setInterval(() => {ScreenMessage();}, 15000);
+  ScreenMessage();
+}, 60500 - new Date().getSeconds() * 1000); //Cykl wyswietlacza
 
 function todaycheck() {
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
