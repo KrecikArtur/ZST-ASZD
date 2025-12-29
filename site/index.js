@@ -181,5 +181,5 @@ function todaycheck() {
   }
 }// sprawdz co dzisiaj
 setInterval(todaycheck, 180000); //sprawdzaj co 30 minut
-todaycheck();clock();
+clock();
 todaycheck();
