@@ -170,10 +170,7 @@ function ScreenMessage() {
   }
 } // Obsluga wyswietlacza LCD
 
-setTimeout(() => {
-  setInterval(() => {ScreenMessage();}, 15000);
-  ScreenMessage();
-}, 60500 - new Date().getSeconds() * 1000); //Cykl wyswietlacza
+function clock() {setTimeout(() => {ScreenMessage(); clock()}, (30 - (new Date().getSeconds() % 30)) * 1000);} //Cykl wyswietlacza
 
 function todaycheck() {
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -184,4 +181,5 @@ function todaycheck() {
   }
 }// sprawdz co dzisiaj
 setInterval(todaycheck, 180000); //sprawdzaj co 30 minut
+todaycheck();clock();
 todaycheck();
