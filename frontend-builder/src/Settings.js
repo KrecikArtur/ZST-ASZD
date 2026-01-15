@@ -69,7 +69,7 @@ const Settings = () => {
       <div className="p-4 rounded border border-primary-subtle bg-primary-subtle">
         {fireGap2 ? (<>
           <Row className="p-2 rounded border border-primary-subtle bg-secondary-subtle">
-            <h4 className="mb-3 text-primary ">Długość Dzwonków</h4>
+            <h4 className="mb-3 text-primary ">Dzwonki</h4>
             <Col md={6}>{renderSlider("Normalny", bellNormal, setBellNormal)}</Col>
             <Col md={6}>{renderSlider("Krótki", bellShort, setBellShort)}</Col>
           </Row>
@@ -77,7 +77,7 @@ const Settings = () => {
           <Row className="p-2 mt-4 rounded border border-primary-subtle bg-secondary-subtle">
             <h4 className="mb-3 text-primary">Alarm Pożarowy</h4>
             <Col md={4}>{renderSlider("Długość sygnału", fireLength, setFireLength)}</Col>
-            <Col md={4}>{renderSlider("Przerwa w cyklu", fireGap, setFireGap)}</Col>
+            <Col md={4}>{renderSlider("Przerwa między sygnałami", fireGap, setFireGap)}</Col>
             <Col md={4}>{renderSlider("Przerwa między cyklami", fireGap2, setFireGap2)}</Col>
           </Row>
           <Row className="mt-4">

@@ -55,18 +55,18 @@ const ActionButtons = () => {
           <Col xs={6}>
             <Button
               className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
-              onClick={() => openConfirm(2, "Pożar")}
+              onClick={() => openConfirm(2, "Alarm Pożarowy")}
             >
-              Pożar
+              Alarm Pożarowy
             </Button>
           </Col>
 
           <Col xs={6}>
             <Button
               className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
-              onClick={() => openConfirm(3, "Barykada")}
+              onClick={() => openConfirm(3, "Alarm Barykada")}
             >
-              Barykada
+              Alarm Barykada
             </Button>
           </Col>
         </Row>
