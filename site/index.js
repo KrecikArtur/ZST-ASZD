@@ -81,7 +81,6 @@ function Reload() {
           bell.writeSync(on);
         break;
     }
-    ScreenMessage();
   });
 }
 //Planer dzwonkow
@@ -166,7 +165,7 @@ function ScreenMessage() {
   if (displaying[2]) {
     const now = new Date();
     displaying[0] = now.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false}).replace(',', '');
-    displaying[1] = "DZWONEK:   "+bellhours.length > 0 ? bellhours[0][0].toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }): "BRAK";
+    displaying[1] = "DZWONEK:   "+(bellhours.length > 0 ? bellhours[0][0].toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }): "BRAK");
   }
   lcd.clearSync();
   lcd.printSync(displaying[0]);
