@@ -24,8 +24,8 @@ app.listen(3010, () => {
   console.log(`Aktywacja Systemu: ${new Date().toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`);
 });
 //Zmienne!
-const on = 0;
-const off = 1;
+const on = 1;
+const off = 0;
 let cyklpracy = 0;
 let weekday = '';
 let bellhours = [];
@@ -81,6 +81,7 @@ function Reload() {
           bell.writeSync(on);
         break;
     }
+    ScreenMessage();
   });
 }
 //Planer dzwonkow
@@ -97,7 +98,6 @@ function StartBells() {
         if (lessonring.getTime() > Date.now()) bellhours.push([lessonring, true]);
         if (brakering.getTime() > Date.now()) bellhours.push([brakering, false]);
       });
-      ScreenMessage();
       // Cykl Dzonienia
       function Schedule() {
         if (bellhours.length == 0 || workingcycle != cyklpracy) return;
