@@ -4,6 +4,7 @@
     "express": "^5.2.1",
     "@bratbit/onoff": "1.0.7",
     "raspberrypi-liquid-crystal": "^1.20.0",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "node-gyp": "11.5.0"
   }
 }
