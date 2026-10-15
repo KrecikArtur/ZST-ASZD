@@ -108,6 +108,26 @@ timedatectl set-ntp true
 systemctl enable --now systemd-timesyncd
 hostnamectl set-hostname bell
 systemctl enable --now avahi-daemon
+
+log "Włączanie magistrali I2C dla wyświetlacza LCD"
+BOOT_CONFIG=""
+for candidate in /boot/firmware/config.txt /boot/config.txt; do
+    if [[ -f "$candidate" ]]; then
+        BOOT_CONFIG="$candidate"
+        break
+    fi
+done
+[[ -n "$BOOT_CONFIG" ]] || die "Nie znaleziono config.txt w /boot/firmware ani /boot. Nie można włączyć I2C."
+if ! grep -Eq '^[[:space:]]*dtparam=i2c_arm=on([[:space:]#]|$)' "$BOOT_CONFIG"; then
+    cat >>"$BOOT_CONFIG" <<'EOF'
+
+# School bell LCD: enable the primary I2C bus
+dtparam=i2c_arm=on
+EOF
+fi
+printf 'i2c-dev\n' >/etc/modules-load.d/bell-i2c.conf
+modprobe i2c-dev || die "Nie można załadować modułu i2c-dev."
+
 cat >/etc/udev/rules.d/99-bell-gpio.rules <<'EOF'
 SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"
 EOF
@@ -177,5 +197,8 @@ systemctl restart bell-site.service
 log "Zastosowanie adresu sieciowego (bieżące połączenie SSH może zostać przerwane)"
 "${NETWORK_APPLY[@]}"
 
-printf '\nInstalacja zakończona. Adres strony: http://bell.local/ lub http://192.168.17.250/\n'
+printf '\nInstalacja zakończona. Uruchom ponownie Raspberry Pi, aby aktywować I2C.\n'
+printf 'Po restarcie otwórz: http://bell.local/ lub http://192.168.17.250/\n'
 [[ -z "$INIT_OUTPUT" ]] || printf '%s\n' "$INIT_OUTPUT"
+log "Ponowne uruchamianie Raspberry Pi"
+systemctl reboot
