@@ -7,7 +7,9 @@ lcd.printSync(" Wczytywanie... ");
 //Wczytanie bazy danych
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database(path.join(__dirname, '../backend/db.sqlite3'));
+const db = new sqlite3.Database(
+  process.env.BELL_DATABASE_PATH || path.join(__dirname, '../backend/db.sqlite3')
+);
 //Uruchomienie strony internetowej
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -36,13 +38,14 @@ let weekday = '';
 let bellhours = [];
 let displaying = ["","",true];
 //Obsluga przyciskow
-const Gpio = require('onoff').Gpio;
-const bell = new Gpio(529, 'out');
+const Gpio = require('@bratbit/onoff').Gpio;
+// BCM line numbers are used by libgpiod on Raspberry Pi 5.
+const bell = new Gpio(17, 'out');
 bell.writeSync(off);
-new Gpio(534, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(0);});
-new Gpio(539, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(1);});
-new Gpio(535, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(2);});
-new Gpio(536, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(3);});
+new Gpio(22, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(0);});
+new Gpio(27, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(1);});
+new Gpio(23, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(2);});
+new Gpio(24, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(3);});
 function buttonpressed(button) {
   const now = Date.now();
   if (now - (lastButtonPress.get(button) || 0) < 300) return;
