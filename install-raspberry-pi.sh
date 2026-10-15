@@ -23,7 +23,8 @@ die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 . /etc/os-release
 [[ "${ID:-}" == raspbian || "${ID:-}" == debian || "${ID_LIKE:-}" == *debian* ]] || die "Wymagany jest Raspberry Pi OS / Debian."
 MODEL="$(tr -d '\0' </proc/device-tree/model)"
-[[ "$MODEL" == *"Raspberry Pi 5"* ]] || die "Wykryto '$MODEL'; wymagany jest Raspberry Pi 5."
+[[ "$MODEL" == *"Raspberry Pi 4"* || "$MODEL" == *"Raspberry Pi 5"* ]] || \
+    die "Wykryto '$MODEL'; obsługiwane są Raspberry Pi 4 i Raspberry Pi 5."
 
 log "Instalowanie wymaganych pakietów systemowych"
 export DEBIAN_FRONTEND=noninteractive
