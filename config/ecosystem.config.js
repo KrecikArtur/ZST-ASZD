@@ -9,7 +9,7 @@ module.exports = {
     {
       name: "BELL-backend",
       script: "/home/bell/backend/venv/bin/gunicorn",
-      args: "backend.wsgi:application --bind 0.0.0.0:8010",
+      args: "backend.wsgi:application --bind 127.0.0.1:8010",
       interpreter: "none",
       env: {
         DJANGO_SETTINGS_MODULE: "backend.settings",

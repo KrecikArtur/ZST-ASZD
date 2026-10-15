@@ -14,6 +14,7 @@ LimitNPROC=infinity
 LimitCORE=infinity
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 Environment=PM2_HOME=/root/.pm2
+EnvironmentFile=/etc/bell/dzwonek.env
 PIDFile=/root/.pm2/pm2.pid
 Restart=on-failure
 
