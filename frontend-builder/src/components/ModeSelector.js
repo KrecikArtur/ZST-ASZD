@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Form, Spinner } from 'react-bootstrap';
 import { showToast } from './Toaster';
-import { getData, saveData, frontPing } from "./Login-Sys";
+import { UseData, frontPing } from "./Login-Sys";
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -43,7 +43,7 @@ const ModeSelector = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await getData('belldata/1/');
+        const res = await UseData('get', 'belldata/1/');
         setData(res);
       } catch (err) {
         console.error('Błąd ładowania danych:', err);
@@ -56,7 +56,7 @@ const ModeSelector = () => {
   const handleChange = async (day, value) => {
     setData(prev => ({ ...prev, [day]: value }));
     try {
-      await saveData('belldata/1', { [day]: value });
+      await UseData('patch', 'belldata/1', { [day]: value });
       showToast("Tryb dzwonienia zaktualizowany!", "success");
       await frontPing('bell/reload', {});
     } catch (err) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from './components/Sidebar';
 import { Spinner, Row, Col, Form, Button } from "react-bootstrap";
 import { showToast } from './components/Toaster';
-import { getData, saveData, frontPing } from "./components/Login-Sys";
+import { UseData, frontPing } from "./components/Login-Sys";
 
 const Settings = () => {
   const [bellNormal, setBellNormal] = useState(0);
@@ -13,7 +13,7 @@ const Settings = () => {
 
   const loadValues = async () => {
     try {
-      const data = await getData('belldata/1/');
+      const data = await UseData('get', 'belldata/1/');
       if (Array.isArray(data.bells)) {
         setBellNormal(data.bells[0] ?? 0);
         setBellShort(data.bells[1] ?? 0);
@@ -34,7 +34,7 @@ const Settings = () => {
 
   const saveAll = async () => {
     try {
-      await saveData('belldata/1', {
+      await UseData('patch', 'belldata/1', {
         bells: [bellNormal, bellShort],
         fire: [fireLength, fireGap, fireGap2],
       });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Row, Col, Button, Modal } from 'react-bootstrap';
-import { saveData, frontPing } from "./Login-Sys";
+import { UseData, frontPing } from "./Login-Sys";
 import { showToast } from './Toaster';
 
 const ActionButtons = () => {
@@ -17,7 +17,7 @@ const ActionButtons = () => {
   const handleConfirm = async () => {
     if (pendingAction === null) return;
     try {
-      await saveData("belldata/1", { status: pendingAction });
+      await UseData("patch", "belldata/1", { status: pendingAction });
       await frontPing("bell/reload", {});
       showToast("Akcja Wykonana!", "success");
       console.log("Bell reloaded via frontPing");

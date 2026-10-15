@@ -3,9 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { Navigate } from "react-router-dom";
 import axios from "axios";
 
-// The Pi serves the frontend and proxies /api/ to Django on the same host.
-// Set REACT_APP_API_BASE_URL only when the API is hosted separately.
-const apiBase = (process.env.REACT_APP_API_BASE_URL || window.location.origin).replace(/\/$/, "");
+const apiBase = "http://bell.local";
 let refreshRequest = null;
 
 function tokenIsValid(token) {
@@ -65,7 +63,6 @@ export function setTokens(access, refresh) {
   }
 }
 
-// Synchronous check retained for existing callers; refresh is handled by getAccessToken.
 export function TokenCheck() {
   const token = localStorage.getItem("access");
   return tokenIsValid(token) ? token : false;
@@ -96,28 +93,23 @@ export async function register(username, password, code) {
   }
 }
 
-async function apiRequest(method, url, data) {
+export async function UseData(type, url, data = {}) {
+  const methods = { get: "get", post: "post", put: "put", patch: "patch", delete: "delete" };
+  const method = methods[type];
+  if (!method) throw new Error(`Nieobsługiwana metoda: ${type}`);
+
   const token = await getAccessToken();
   if (!token) throw new Error("Sesja wygasła. Zaloguj się ponownie.");
-  const path = url.replace(/^\/+/, "");
+  const [pathname, query] = url.replace(/^\/+/, "").split(/\?(.*)/s, 2);
+  const normalizedPath = pathname.endsWith("/") ? pathname : `${pathname}/`;
+  const path = query === undefined ? normalizedPath : `${normalizedPath}?${query}`;
   const response = await axios({
     method,
     url: `${apiBase}/api/${path}`,
-    ...(data === undefined ? {} : { data }),
+    ...(type === "get" || type === "delete" ? {} : { data }),
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
-}
-
-export const getData = url => apiRequest("get", url);
-export const saveData = (url, data) => apiRequest("patch", url, data);
-export const putData = (url, data) => apiRequest("put", url, data);
-
-// Compatibility with the updated screens in akualizacje/src.
-export function UseData(type, url, data = {}) {
-  const methods = { get: "get", post: "post", put: "put", delete: "delete" };
-  if (!methods[type]) return Promise.reject(new Error(`Nieobsługiwana metoda: ${type}`));
-  return apiRequest(methods[type], url, type === "get" || type === "delete" ? undefined : data);
 }
 
 export async function frontPing(url, data) {

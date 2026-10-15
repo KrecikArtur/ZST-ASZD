@@ -5,7 +5,7 @@ import { showToast } from './components/Toaster';
 import Sidebar from './components/Sidebar';
 import PlanSelector from './components/PlanSelector';
 import PlanEditor from './components/PlanEditor';
-import { getData, putData, frontPing } from './components/Login-Sys';
+import { UseData, frontPing } from './components/Login-Sys';
 
 const Plan = () => {
   const { option } = useParams();
@@ -16,7 +16,7 @@ const Plan = () => {
 
   const ScheduleReload = useCallback(async () => {
     try {
-      const data = await getData(`schedule/?option=${option}`);
+      const data = await UseData('get', `schedule/?option=${option}`);
       setHours(data);
     } catch (err) {
       console.error('Schedule Error', err);
@@ -37,7 +37,7 @@ const Plan = () => {
 
   const ScheduleSave = async () => {
     try {
-      await putData(`schedule/${option}`, hours);
+      await UseData('put', `schedule/${option}`, hours);
       await frontPing('bell/reload', {});
       showToast('Zapisano plan.', 'success');
     } catch (err) {
