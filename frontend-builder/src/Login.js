@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { showToast } from './components/Toaster';
-import { login, TokenCheck } from "./components/Login-Sys";
+import { login, getAccessToken } from "./components/Login-Sys";
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -11,7 +11,7 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!login||!password) {showToast("Wszystkie pola są wymagane.", "danger"); return;}
+    if (!username || !password) {showToast("Wszystkie pola są wymagane.", "danger"); return;}
     setLoading(true);
     try {
       await login(username, password);
@@ -26,7 +26,7 @@ function Login() {
 
   useEffect(() => {
     const autoLogin = async () => {
-      const token = TokenCheck();
+      const token = await getAccessToken();
       if (token) {
         navigate("/dashboard", { replace: true });
       }

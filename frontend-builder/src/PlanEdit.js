@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Button, Modal, Form } from 'react-bootstrap';
 import { useParams } from 'react-router-dom';
 import { showToast } from './components/Toaster';
@@ -14,7 +14,7 @@ const Plan = () => {
   const [newLesson, setNewLesson] = useState('08:00');
   const [Length, setLength] = useState(45);
 
-  const ScheduleReload = async () => {
+  const ScheduleReload = useCallback(async () => {
     try {
       const data = await getData(`schedule/?option=${option}`);
       setHours(data);
@@ -22,11 +22,11 @@ const Plan = () => {
       console.error('Schedule Error', err);
       showToast('Błąd ładowania planu!', 'danger');
     }
-  };
+  }, [option]);
 
   useEffect(() => {
     ScheduleReload();
-  }, [option]);
+  }, [ScheduleReload]);
 
   const HourRemoved = (hourObj) => {
     setHours(hours.filter(h =>
