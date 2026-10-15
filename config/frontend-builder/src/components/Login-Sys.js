@@ -28,22 +28,20 @@ export function setTokens(access, refresh) {
 export function TokenCheck() {
   const token = localStorage.getItem("access");
   try {
-    if (!token) throw new Error(0);
+    if (!token) {throw new Error(0);}
     const decoded = jwtDecode(token);
-    if (decoded.exp * 1000 < Date.now()) throw new Error();
-    return token;
+    if (decoded.exp * 1000 < Date.now()) {throw new Error();}
+    return token
   } catch (err) {
     try {
-      if (err.message === "0") return false;
+      if (err.message === "0") {return false;}
       const refresh = localStorage.getItem("refresh");
-      if (!refresh) return false;
+      if (!refresh) {return false}
       if (jwtDecode(refresh).exp * 1000 < Date.now()) throw new Error();
-      const res = axios.post(`${apiBase}/api/token/refresh/`, { refresh });
+      const res = axios.post(`${apiBase}/api/token/refresh/`, {refresh: refresh});
       setTokens(res.data.access);
       return res.data.access;
-    } catch {
-      return false;
-    }
+    } catch (err) {return false}
   }
 }
 
