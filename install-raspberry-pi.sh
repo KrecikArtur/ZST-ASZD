@@ -21,7 +21,7 @@ die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 [[ "$(id -u)" -eq 0 ]] || die "Uruchom instalator przez sudo jako root."
 [[ -r /etc/os-release && -r /proc/device-tree/model ]] || die "System nie wygląda na Raspberry Pi OS."
 . /etc/os-release
-[[ "${ID:-}" == raspbian || "${ID_LIKE:-}" == *debian* ]] || die "Wymagany jest Raspberry Pi OS / Debian."
+[[ "${ID:-}" == raspbian || "${ID:-}" == debian || "${ID_LIKE:-}" == *debian* ]] || die "Wymagany jest Raspberry Pi OS / Debian."
 MODEL="$(tr -d '\0' </proc/device-tree/model)"
 [[ "$MODEL" == *"Raspberry Pi 5"* ]] || die "Wykryto '$MODEL'; wymagany jest Raspberry Pi 5."
 
