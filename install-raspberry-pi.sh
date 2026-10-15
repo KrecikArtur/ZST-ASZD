@@ -3,8 +3,10 @@ set -Eeuo pipefail
 
 # Run on Raspberry Pi OS as root. Optional overrides:
 # BELL_GIT_URL, BELL_GIT_REF, BELL_NET_IFACE, BELL_DNS.
+# Once pushed, download this root-level file from:
+# https://raw.githubusercontent.com/KrecikArtur/ZST-ASZD/deploy/install-raspberry-pi.sh
 BELL_GIT_URL="${BELL_GIT_URL:-https://github.com/KrecikArtur/ZST-ASZD.git}"
-BELL_GIT_REF="${BELL_GIT_REF:-main}"
+BELL_GIT_REF="${BELL_GIT_REF:-deploy}"
 BELL_DNS="${BELL_DNS:-192.168.16.2}"
 BELL_ADDRESS="192.168.17.250/23"
 BELL_GATEWAY="192.168.16.2"
