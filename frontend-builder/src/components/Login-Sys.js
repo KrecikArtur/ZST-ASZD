@@ -3,7 +3,8 @@ import { jwtDecode } from "jwt-decode";
 import { Navigate } from "react-router-dom";
 import axios from "axios";
 
-const apiBase = "http://bell.local";
+const apiBase = process.env.REACT_APP_API_BASE_URL
+  ?? (process.env.NODE_ENV === "development" ? "" : "http://bell.local");
 let refreshRequest = null;
 
 function tokenIsValid(token) {

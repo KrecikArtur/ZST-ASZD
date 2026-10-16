@@ -10,6 +10,35 @@ const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database(
   process.env.BELL_DATABASE_PATH || path.join(__dirname, '../backend/db.sqlite3')
 );
+const STATUS = {
+  IDLE: 'normalny',
+  MANUAL: 'dzwonek',
+  FIRE: 'alarm_pozarowy',
+  BARRICADE: 'alarm_barykada',
+};
+function parseStoredValue(value) {
+  try { return JSON.parse(value); } catch { return value; }
+}
+
+function getSetting(setting, callback) {
+  db.get('SELECT "value" FROM api_belldata WHERE setting = ?', [setting], (err, row) => {
+    callback(err, row ? parseStoredValue(row.value) : undefined);
+  });
+}
+
+function setSetting(setting, value, callback = () => {}) {
+  db.run('UPDATE api_belldata SET "value" = ? WHERE setting = ?', [JSON.stringify(value), setting], function (err) {
+    if (!err && this.changes === 0) err = new Error(`Brak ustawienia ${setting}`);
+    callback(err);
+  });
+}
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 //Uruchomienie strony internetowej
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -30,7 +59,7 @@ const on = 0;
 const off = 1;
 let cyklpracy = 0;
 let ringVersion = 0;
-let activeMode = 0;
+let activeMode = STATUS.IDLE;
 let manualBellPendingUntil = 0;
 let initialModeLoaded = false;
 const lastButtonPress = new Map();
@@ -52,15 +81,16 @@ function buttonpressed(button) {
   lastButtonPress.set(button, now);
   const workingcycle = cyklpracy;
   const modes = ["ANULUJ","ZADZWON","ALARM POZAROWY","ALARM BARYKADA"];
-  db.get("SELECT status FROM api_belldata LIMIT 1", [], (err, row) => {
+  const requestedStatus = [STATUS.IDLE, STATUS.MANUAL, STATUS.FIRE, STATUS.BARRICADE][button];
+  getSetting('status', (err, status) => {
     if (workingcycle !== cyklpracy) return;
-    if (err || !row) {
+    if (err || status === undefined) {
       console.error("Nie można odczytać stanu dzwonka:", err || "brak rekordu");
       return;
     }
     if (displaying[0] === modes[button]) {
-      if (Number(row.status) === 0 || button === 0) {
-        db.run("UPDATE api_belldata SET status = ? WHERE id = 1", [button], err => {
+      if (status === STATUS.IDLE || button === 0) {
+        setSetting('status', requestedStatus, err => {
           if (err) {
             console.error("Nie można zmienić stanu dzwonka:", err);
             return;
@@ -88,38 +118,38 @@ function Reload() {
   cyklpracy += 1;
   ringVersion += 1;
   const workingcycle = cyklpracy;
-  db.get("SELECT status FROM api_belldata LIMIT 1", [], (err, row) => {
+  getSetting('status', (err, requestedStatus) => {
     if (workingcycle !== cyklpracy) return;
-    if (err || !row) {
-      activeMode = 0;
+    if (err || requestedStatus === undefined) {
+      activeMode = STATUS.IDLE;
       displaying = ["BLAD", "BAZA DANYCH", false];
       console.error("Nie można odczytać stanu dzwonka:", err || "brak rekordu");
       ScreenMessage();
       return;
     }
 
-    let requestedMode = Number(row.status);
+    let requestedMode = requestedStatus;
     if (!initialModeLoaded) {
       initialModeLoaded = true;
-      if (requestedMode === 1) {
+      if (requestedMode === STATUS.MANUAL) {
         // A one-shot ring left behind by a crash must not ring again on reboot.
-        requestedMode = 0;
-        db.run("UPDATE api_belldata SET status = ? WHERE id = 1", [0], updateErr => {
+        requestedMode = STATUS.IDLE;
+        setSetting('status', STATUS.IDLE, updateErr => {
           if (updateErr) console.error("Nie można wyczyścić starego polecenia dzwonka:", updateErr);
         });
       }
     }
-    if (![0, 1, 2, 3].includes(requestedMode)) {
-      activeMode = 0;
+    if (!Object.values(STATUS).includes(requestedMode)) {
+      activeMode = STATUS.IDLE;
       displaying = ["BLAD", "NIEZNANY TRYB", false];
-      console.error("Nieznany stan dzwonka:", row.status);
+      console.error("Nieznany stan dzwonka:", requestedMode);
       ScreenMessage();
       return;
     }
 
     // Zwykły dzwonek nie może przerwać aktywnego alarmu ani go przełączyć.
-    if (activeMode !== 0 && requestedMode !== 0 && requestedMode !== activeMode) {
-      db.run("UPDATE api_belldata SET status = ? WHERE id = 1", [activeMode], updateErr => {
+    if (activeMode !== STATUS.IDLE && requestedMode !== STATUS.IDLE && requestedMode !== activeMode) {
+      setSetting('status', activeMode, updateErr => {
         if (updateErr) console.error("Nie można przywrócić aktywnego alarmu:", updateErr);
       });
       activateMode(activeMode, workingcycle);
@@ -127,18 +157,18 @@ function Reload() {
       return;
     }
 
-    if (requestedMode === 1) {
-      if (activeMode !== 0 || Date.now() < manualBellPendingUntil) {
-        db.run("UPDATE api_belldata SET status = ? WHERE id = 1", [activeMode]);
+    if (requestedMode === STATUS.MANUAL) {
+      if (activeMode !== STATUS.IDLE || Date.now() < manualBellPendingUntil) {
+        setSetting('status', activeMode);
         activateMode(activeMode, workingcycle);
         ScreenMessage();
         return;
       }
       manualBellPendingUntil = Date.now() + 5000;
-      activeMode = 0;
+      activeMode = STATUS.IDLE;
       displaying[2] = true;
       ring(0, workingcycle);
-      db.run("UPDATE api_belldata SET status = ? WHERE id = 1", [0], updateErr => {
+      setSetting('status', STATUS.IDLE, updateErr => {
         if (updateErr) console.error("Nie można wyzerować jednorazowego dzwonka:", updateErr);
       });
       StartBells();
@@ -155,15 +185,15 @@ function Reload() {
 
 function activateMode(mode, workingcycle) {
   switch (mode) {
-    case 0:
+    case STATUS.IDLE:
       displaying[2] = true;
       StartBells();
       break;
-    case 2:
+    case STATUS.FIRE:
       displaying = ["ALARM", "POZAR", false];
       fire(workingcycle);
       break;
-    case 3:
+    case STATUS.BARRICADE:
       displaying = ["ALARM", "BARYKADA", false];
       bell.writeSync(on);
       break;
@@ -172,13 +202,34 @@ function activateMode(mode, workingcycle) {
 //Planer dzwonkow
 function StartBells() {
   const workingcycle = cyklpracy;
-  db.get(`SELECT ${weekday} FROM api_belldata LIMIT 1`, [], (err, row) => {
+  const planSetting = `plan.${weekday}`;
+  getSetting(planSetting, (err, configuredMode) => {
     if (workingcycle !== cyklpracy) return;
-    if (err || !row) {
+    if (err || configuredMode === undefined) {
       console.error("Nie można odczytać planu dzwonków:", err || "brak rekordu");
       return;
     }
-    db.all("SELECT lesson, brake FROM api_schedule WHERE option = ?", [row[weekday]], (err, rows) => {
+    getSetting('plan.override', (overrideErr, override) => {
+      if (workingcycle !== cyklpracy) return;
+      if (overrideErr) {
+        console.error('Nie można odczytać tymczasowego planu:', overrideErr);
+        override = null;
+      }
+      const today = localDateKey();
+      let selectedMode = configuredMode;
+      if (override && override.date === today && PLAN_OPTIONS[override.mode]) {
+        selectedMode = override.mode;
+      } else if (override !== null && override !== undefined) {
+        setSetting('plan.override', null, clearErr => {
+          if (clearErr) console.error('Nie można wyczyścić wygasłego planu:', clearErr);
+        });
+      }
+      if (!['normalny', 'alternatywny_a', 'alternatywny_b', 'alternatywny_c', 'wylaczony'].includes(selectedMode)) {
+        console.error('Nieznany tryb planu:', selectedMode);
+        return;
+      }
+      if (selectedMode === 'wylaczony') return;
+      db.all("SELECT lesson, brake FROM api_schedule WHERE option = ?", [selectedMode], (err, rows) => {
       if (workingcycle !== cyklpracy) return;
       if (err || !rows) {
         console.error("Nie można odczytać godzin dzwonków:", err || "brak wyników");
@@ -218,24 +269,18 @@ function StartBells() {
           }
         }
       Schedule();
+      });
     });
   });
 }
 //Dzwonek
 function ring(mode, workingcycle = cyklpracy) {
-  db.get("SELECT bells FROM api_belldata LIMIT 1", [], (err, row) => {
-    if (err || !row) {
+  getSetting(mode === 0 ? 'bell.normal' : 'bell.short', (err, durationValue) => {
+    if (err || durationValue === undefined) {
       console.error("Nie można odczytać czasu dzwonka:", err || "brak rekordu");
       return;
     }
-    let times;
-    try {
-      times = typeof row.bells === "string" ? JSON.parse(row.bells) : row.bells;
-    } catch (parseError) {
-      console.error("Nieprawidłowe ustawienia dzwonka:", parseError);
-      return;
-    }
-    const duration = Number(times?.[mode]);
+    const duration = Number(durationValue);
     if (workingcycle !== cyklpracy || !Number.isFinite(duration) || duration <= 0 || duration > 5) {
       if (duration > 5) console.error("Pominięto dzwonek: czas sygnału przekracza limit 5 sekund.");
       return;
@@ -243,7 +288,8 @@ function ring(mode, workingcycle = cyklpracy) {
     const currentRing = ++ringVersion;
     bell.writeSync(on);
     setTimeout(() => {
-      if (workingcycle === cyklpracy && currentRing === ringVersion && activeMode !== 2 && activeMode !== 3) {
+      if (workingcycle === cyklpracy && currentRing === ringVersion
+        && activeMode !== STATUS.FIRE && activeMode !== STATUS.BARRICADE) {
         bell.writeSync(off);
       }
     }, duration * 1000);
@@ -251,25 +297,21 @@ function ring(mode, workingcycle = cyklpracy) {
 }
 //Alarm poz
 function fire(workingcycle = cyklpracy) {
-  db.get("SELECT fire FROM api_belldata LIMIT 1", [], (err, row) => {
-    if (workingcycle !== cyklpracy || activeMode !== 2) return;
-    if (err || !row) {
-      console.error("Nie można odczytać ustawień alarmu:", err || "brak rekordu");
+  getSetting('alarm.fire.signal_length', (lengthErr, signalLengthValue) => {
+    if (workingcycle !== cyklpracy || activeMode !== STATUS.FIRE) return;
+    if (lengthErr || signalLengthValue === undefined) {
+      console.error("Nie można odczytać ustawień alarmu:", lengthErr || "brak rekordu");
       displaying = ["BLAD ALARMU", "BAZA DANYCH", false];
       ScreenMessage();
       return;
     }
-    let times;
-    try {
-      times = typeof row.fire === "string" ? JSON.parse(row.fire) : row.fire;
-    } catch (parseError) {
-      console.error("Nieprawidłowe ustawienia alarmu:", parseError);
-      displaying = ["BLAD ALARMU", "USTAWIENIA", false];
-      ScreenMessage();
-      return;
-    }
-
-    const [signalLength, pulseGap, cycleGap] = Array.isArray(times) ? times.map(Number) : [];
+    getSetting('alarm.fire.pulse_gap', (gapErr, pulseGapValue) => {
+      if (gapErr || pulseGapValue === undefined) return console.error('Brak przerwy między sygnałami alarmu:', gapErr);
+      getSetting('alarm.fire.cycle_gap', (cycleErr, cycleGapValue) => {
+        if (cycleErr || cycleGapValue === undefined) return console.error('Brak przerwy między cyklami alarmu:', cycleErr);
+    const signalLength = Number(signalLengthValue);
+    const pulseGap = Number(pulseGapValue);
+    const cycleGap = Number(cycleGapValue);
     if (![signalLength, pulseGap, cycleGap].every(Number.isFinite)
       || signalLength <= 0 || signalLength > 5 || pulseGap < 0 || pulseGap > 5 || cycleGap < 0 || cycleGap > 5) {
       console.error("Pominięto alarm: ustawienia muszą być z zakresu 0–5 s, a długość sygnału większa od zera.");
@@ -280,10 +322,10 @@ function fire(workingcycle = cyklpracy) {
     }
 
     function pulse(index) {
-      if (workingcycle !== cyklpracy || activeMode !== 2) return;
+      if (workingcycle !== cyklpracy || activeMode !== STATUS.FIRE) return;
       bell.writeSync(on);
       setTimeout(() => {
-        if (workingcycle !== cyklpracy || activeMode !== 2) return;
+        if (workingcycle !== cyklpracy || activeMode !== STATUS.FIRE) return;
         bell.writeSync(off);
         if (index < 2) {
           setTimeout(() => pulse(index + 1), pulseGap * 1000);
@@ -294,6 +336,8 @@ function fire(workingcycle = cyklpracy) {
     }
 
     pulse(0);
+      });
+    });
   });
 }
 //Obsluga wyswietlacza

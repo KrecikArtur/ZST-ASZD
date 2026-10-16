@@ -10,21 +10,21 @@ const Settings = () => {
   const [fireLength, setFireLength] = useState(0);
   const [fireGap, setFireGap] = useState(0);
   const [fireGap2, setFireGap2] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const loadValues = async () => {
     try {
-      const data = await UseData('get', 'belldata/1/');
-      if (Array.isArray(data.bells)) {
-        setBellNormal(data.bells[0] ?? 0);
-        setBellShort(data.bells[1] ?? 0);
-      }
-      if (Array.isArray(data.fire)) {
-        setFireLength(data.fire[0] ?? 0);
-        setFireGap(data.fire[1] ?? 0);
-        setFireGap2(data.fire[2] ?? 0);
-      }
+      const rows = await UseData('get', 'belldata/');
+      const values = Object.fromEntries(rows.map(({ setting, value }) => [setting, value]));
+      setBellNormal(values['bell.normal'] ?? 0);
+      setBellShort(values['bell.short'] ?? 0);
+      setFireLength(values['alarm.fire.signal_length'] ?? 0);
+      setFireGap(values['alarm.fire.pulse_gap'] ?? 0);
+      setFireGap2(values['alarm.fire.cycle_gap'] ?? 0);
     } catch (err) {
       console.error("Settings fetch error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,10 +34,13 @@ const Settings = () => {
 
   const saveAll = async () => {
     try {
-      await UseData('patch', 'belldata/1', {
-        bells: [bellNormal, bellShort],
-        fire: [fireLength, fireGap, fireGap2],
-      });
+      await Promise.all([
+        ['bell.normal', bellNormal],
+        ['bell.short', bellShort],
+        ['alarm.fire.signal_length', fireLength],
+        ['alarm.fire.pulse_gap', fireGap],
+        ['alarm.fire.cycle_gap', fireGap2],
+      ].map(([setting, value]) => UseData('patch', `belldata/${setting}`, { value })));
       showToast("Zapisano ustawienia.", "success");
       await frontPing('bell/reload', {});
     } catch (err) {
@@ -67,7 +70,7 @@ const Settings = () => {
       <h1 className='text-primary'>Ustawienia</h1>
       <hr/>
       <div className="p-4 rounded border border-primary-subtle bg-primary-subtle">
-        {fireGap2 ? (<>
+        {!loading ? (<>
           <Row className="p-2 rounded border border-primary-subtle bg-secondary-subtle">
             <h4 className="mb-3 text-primary ">Dzwonki</h4>
             <Col md={6}>{renderSlider("Normalny", bellNormal, setBellNormal)}</Col>

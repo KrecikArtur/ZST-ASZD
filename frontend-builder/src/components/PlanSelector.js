@@ -7,10 +7,10 @@ const PlanSelector = () => {
   const location = useLocation();
 
   const plans = [
-    { label: "Normalny", path: "norm" },
-    { label: "Alternatywny A", path: "alta" },
-    { label: "Alternatywny B", path: "altb" },
-    { label: "Alternatywny C", path: "altc" },
+    { label: "Normalny", path: "normalny" },
+    { label: "Alternatywny A", path: "alternatywny_a" },
+    { label: "Alternatywny B", path: "alternatywny_b" },
+    { label: "Alternatywny C", path: "alternatywny_c" },
   ];
 
   const handleClick = (path) => {

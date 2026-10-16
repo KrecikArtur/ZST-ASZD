@@ -17,7 +17,7 @@ const ActionButtons = () => {
   const handleConfirm = async () => {
     if (pendingAction === null) return;
     try {
-      await UseData("patch", "belldata/1", { status: pendingAction });
+      await UseData("patch", "belldata/status", { value: pendingAction });
       await frontPing("bell/reload", {});
       showToast("Akcja Wykonana!", "success");
       console.log("Bell reloaded via frontPing");
@@ -37,7 +37,7 @@ const ActionButtons = () => {
           <Col xs={6} className="mb-4">
             <Button
               className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
-              onClick={() => openConfirm(1, "Zadzwoń Dzwonkiem")}
+              onClick={() => openConfirm("dzwonek", "Zadzwoń Dzwonkiem")}
             >
               Zadzwoń Dzwonkiem
             </Button>
@@ -46,7 +46,7 @@ const ActionButtons = () => {
           <Col xs={6} className="mb-4">
             <Button
               className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
-              onClick={() => openConfirm(0, "Odwołaj Alarm")}
+              onClick={() => openConfirm("normalny", "Odwołaj Alarm")}
             >
               Odwołaj Alarm
             </Button>
@@ -55,7 +55,7 @@ const ActionButtons = () => {
           <Col xs={6}>
             <Button
               className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
-              onClick={() => openConfirm(2, "Alarm Pożarowy")}
+              onClick={() => openConfirm("alarm_pozarowy", "Alarm Pożarowy")}
             >
               Alarm Pożarowy
             </Button>
@@ -64,7 +64,7 @@ const ActionButtons = () => {
           <Col xs={6}>
             <Button
               className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
-              onClick={() => openConfirm(3, "Alarm Barykada")}
+              onClick={() => openConfirm("alarm_barykada", "Alarm Barykada")}
             >
               Alarm Barykada
             </Button>

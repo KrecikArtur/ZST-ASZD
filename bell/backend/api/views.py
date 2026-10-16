@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import BellData, Schedule
 from .serializers import ScheduleDataSerializer, BellDataSerializer, RegisterSerializer
-from datetime import time
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 from django.db import transaction
 
 class RegisterView(APIView):
@@ -20,6 +21,19 @@ class BellDataViewSet(viewsets.ModelViewSet):
     queryset = BellData.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = BellDataSerializer
+    lookup_field = 'setting'
+    lookup_value_regex = r'[^/]+'
+    http_method_names = ['get', 'patch', 'head', 'options']
+
+    def perform_update(self, serializer):
+        setting = serializer.instance.setting
+        today = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')[
+            datetime.now(ZoneInfo('Europe/Warsaw')).weekday()
+        ]
+        with transaction.atomic():
+            serializer.save()
+            if setting == f'plan.{today}':
+                BellData.objects.filter(setting='plan.override').update(value=None)
 
 class ScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ScheduleDataSerializer
@@ -37,6 +51,11 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     # override update for PUT /schedule/<option>/
     def update(self, request, *args, **kwargs):
         option = kwargs.get('option')
+        if option not in {'normalny', 'alternatywny_a', 'alternatywny_b', 'alternatywny_c', 'wylaczony'}:
+            return Response(
+                {"error": "Unknown schedule option"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if not isinstance(request.data, list):
             return Response(
                 {"error": "Expected a list of schedule entries"},

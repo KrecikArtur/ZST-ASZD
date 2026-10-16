@@ -8,7 +8,7 @@ function Sidebar({ children }) {
   const navigate = useNavigate();
   const menuItems = [
     { name: 'Panel sterowania', path: '/dashboard', style: 'border-success text-success' },
-    { name: 'Edytuj plan', path: '/planedit/norm', style: 'border-info text-info' },
+    { name: 'Edytuj plan', path: '/planedit/normalny', style: 'border-info text-info' },
     { name: 'Ustawienia', path: '/options', style: 'border-info text-info' },
   ];
 
