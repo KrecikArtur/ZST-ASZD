@@ -112,9 +112,12 @@ function buttonpressed(button) {
 
   if (button === 0) {
     if (activeMode !== STATUS.IDLE) return;
-    const selectedMode = planMenuMode || (PLAN_OPTIONS[currentPlanMode] ? currentPlanMode : 'normalny');
-    const currentIndex = PLAN_CYCLE.indexOf(selectedMode);
-    planMenuMode = PLAN_CYCLE[currentIndex === -1 ? 0 : (currentIndex + 1) % PLAN_CYCLE.length];
+    if (planMenuMode === null) {
+      planMenuMode = PLAN_OPTIONS[currentPlanMode] ? currentPlanMode : 'normalny';
+    } else {
+      const currentIndex = PLAN_CYCLE.indexOf(planMenuMode);
+      planMenuMode = PLAN_CYCLE[currentIndex === -1 ? 0 : (currentIndex + 1) % PLAN_CYCLE.length];
+    }
     if (planMenuTimer) clearTimeout(planMenuTimer);
     planMenuTimer = setTimeout(() => {
       planMenuTimer = null;
@@ -427,11 +430,14 @@ function ScreenMessage() {
     return;
   }
   if (displaying[2]) {
-    lcd.clearSync();
-    lcd.printSync('Plan:');
-    lcd.setCursorSync(0, 1);
-    lcd.printSync(PLAN_OPTIONS[currentPlanMode] || 'Ladowanie...');
-    return;
+    const now = new Date();
+    displaying[0] = now.toLocaleString('en-GB', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).replace(',', '');
+    displaying[1] = 'DZWONEK:   ' + (bellhours.length > 0
+      ? bellhours[0][0].toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : 'BRAK');
   }
   lcd.clearSync();
   lcd.printSync(displaying[0]);
