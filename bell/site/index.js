@@ -16,6 +16,14 @@ const STATUS = {
   FIRE: 'alarm_pozarowy',
   BARRICADE: 'alarm_barykada',
 };
+const PLAN_OPTIONS = {
+  normalny: 'Normalny',
+  alternatywny_a: 'Alternatywny A',
+  alternatywny_b: 'Alternatywny B',
+  alternatywny_c: 'Alternatywny C',
+  wylaczony: 'Wylaczony',
+};
+const PLAN_CYCLE = ['normalny', 'alternatywny_a', 'alternatywny_b', 'alternatywny_c', 'wylaczony'];
 function parseStoredValue(value) {
   try { return JSON.parse(value); } catch { return value; }
 }
@@ -66,22 +74,89 @@ const lastButtonPress = new Map();
 let weekday = '';
 let bellhours = [];
 let displaying = ["","",true];
+let currentPlanMode = null;
+let planMenuMode = null;
+let planMenuTimer = null;
+
+function closePlanMenu() {
+  if (planMenuTimer) clearTimeout(planMenuTimer);
+  planMenuTimer = null;
+  planMenuMode = null;
+}
+
 //Obsluga przyciskow
 const Gpio = require('@bratbit/onoff').Gpio;
 // BCM line numbers are used by libgpiod on Raspberry Pi 5.
 const bell = new Gpio(17, 'out');
 bell.writeSync(off);
-new Gpio(22, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(0);});
-new Gpio(27, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(1);});
-new Gpio(23, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(2);});
-new Gpio(24, 'in', 'both').watch((err, value) => {if (value === 1) buttonpressed(3);});
+new Gpio(22, 'in', 'both').watch((err, value) => {
+  if (err) return console.error('Blad odczytu GPIO 22:', err);
+  if (value === 1) buttonpressed(1); // Przycisk 2: zatwierdzenie / anulowanie alarmu
+});
+new Gpio(27, 'in', 'both').watch((err, value) => {
+  if (err) return console.error('Blad odczytu GPIO 27:', err);
+  if (value === 1) buttonpressed(0); // Przycisk 1: wybor planu
+});
+new Gpio(23, 'in', 'both').watch((err, value) => {
+  if (err) return console.error('Blad odczytu GPIO 23:', err);
+  if (value === 1) buttonpressed(2); // Przycisk 3: alarm pozarowy
+});
+new Gpio(24, 'in', 'both').watch((err, value) => {
+  if (err) return console.error('Blad odczytu GPIO 24:', err);
+  if (value === 1) buttonpressed(3); // Przycisk 4: alarm barykada
+});
 function buttonpressed(button) {
   const now = Date.now();
   if (now - (lastButtonPress.get(button) || 0) < 300) return;
   lastButtonPress.set(button, now);
+
+  if (button === 0) {
+    if (activeMode !== STATUS.IDLE) return;
+    const selectedMode = planMenuMode || (PLAN_OPTIONS[currentPlanMode] ? currentPlanMode : 'normalny');
+    const currentIndex = PLAN_CYCLE.indexOf(selectedMode);
+    planMenuMode = PLAN_CYCLE[currentIndex === -1 ? 0 : (currentIndex + 1) % PLAN_CYCLE.length];
+    if (planMenuTimer) clearTimeout(planMenuTimer);
+    planMenuTimer = setTimeout(() => {
+      planMenuTimer = null;
+      planMenuMode = null;
+      ScreenMessage();
+    }, 10000);
+    ScreenMessage();
+    return;
+  }
+
+  if (button === 1) {
+    if (activeMode !== STATUS.IDLE) {
+      closePlanMenu();
+      setSetting('status', STATUS.IDLE, err => {
+        if (err) {
+          console.error('Nie mozna anulowac alarmu:', err);
+          return;
+        }
+        Reload();
+      });
+      return;
+    }
+    if (planMenuMode === null) return;
+    const selectedMode = planMenuMode;
+    const override = { date: localDateKey(), mode: selectedMode };
+    setSetting('plan.override', override, err => {
+      if (err) {
+        console.error('Nie mozna zapisac tymczasowego planu:', err);
+        return;
+      }
+      currentPlanMode = selectedMode;
+      closePlanMenu();
+      Reload();
+    });
+    return;
+  }
+
+  // Alarmy pozostaja dostepne niezaleznie od menu wyboru planu.
+  closePlanMenu();
   const workingcycle = cyklpracy;
-  const modes = ["ANULUJ","ZADZWON","ALARM POZAROWY","ALARM BARYKADA"];
-  const requestedStatus = [STATUS.IDLE, STATUS.MANUAL, STATUS.FIRE, STATUS.BARRICADE][button];
+  const modes = [null, null, "ALARM POZAROWY", "ALARM BARYKADA"];
+  const requestedStatus = [null, null, STATUS.FIRE, STATUS.BARRICADE][button];
   getSetting('status', (err, status) => {
     if (workingcycle !== cyklpracy) return;
     if (err || status === undefined) {
@@ -89,7 +164,7 @@ function buttonpressed(button) {
       return;
     }
     if (displaying[0] === modes[button]) {
-      if (status === STATUS.IDLE || button === 0) {
+      if (status === STATUS.IDLE) {
         setSetting('status', requestedStatus, err => {
           if (err) {
             console.error("Nie można zmienić stanu dzwonka:", err);
@@ -99,20 +174,20 @@ function buttonpressed(button) {
         });
       }
     } else {
+      if (workingcycle !== cyklpracy) return;
+      displaying = [modes[button],"WYKONAC?",false];
+      ScreenMessage();
       setTimeout(() => {
-        if (workingcycle !== cyklpracy) return;
-        displaying = [modes[button],"WYKONAC?",false];
+        if (workingcycle!==cyklpracy||displaying[0]!==modes[button]) return;
+        displaying[2] = true;
         ScreenMessage();
-        setTimeout(() => {
-          if (workingcycle!=cyklpracy||displaying[0]!=modes[button]) {return}
-          displaying[2] = true; ScreenMessage();
-        }, 5000);
-      },500)
+      }, 5000);
     }
   });
 }
 //Przeladowanie stanu programu
 function Reload() {
+  closePlanMenu();
   bell.writeSync(off);
   bellhours = [];
   cyklpracy += 1;
@@ -228,6 +303,8 @@ function StartBells() {
         console.error('Nieznany tryb planu:', selectedMode);
         return;
       }
+      currentPlanMode = selectedMode;
+      ScreenMessage();
       if (selectedMode === 'wylaczony') return;
       db.all("SELECT lesson, brake FROM api_schedule WHERE option = ?", [selectedMode], (err, rows) => {
       if (workingcycle !== cyklpracy) return;
@@ -342,10 +419,19 @@ function fire(workingcycle = cyklpracy) {
 }
 //Obsluga wyswietlacza
 function ScreenMessage() {
+  if (planMenuMode !== null && activeMode === STATUS.IDLE) {
+    lcd.clearSync();
+    lcd.printSync('Plan:');
+    lcd.setCursorSync(0, 1);
+    lcd.printSync(PLAN_OPTIONS[planMenuMode] || 'Normalny');
+    return;
+  }
   if (displaying[2]) {
-    const now = new Date();
-    displaying[0] = now.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false}).replace(',', '');
-    displaying[1] = "DZWONEK:   "+(bellhours.length > 0 ? bellhours[0][0].toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }): "BRAK");
+    lcd.clearSync();
+    lcd.printSync('Plan:');
+    lcd.setCursorSync(0, 1);
+    lcd.printSync(PLAN_OPTIONS[currentPlanMode] || 'Ladowanie...');
+    return;
   }
   lcd.clearSync();
   lcd.printSync(displaying[0]);
