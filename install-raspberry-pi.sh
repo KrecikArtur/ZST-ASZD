@@ -7,7 +7,7 @@ set -Eeuo pipefail
 # https://raw.githubusercontent.com/KrecikArtur/ZST-ASZD/deploy/install-raspberry-pi.sh
 BELL_GIT_URL="${BELL_GIT_URL:-https://github.com/KrecikArtur/ZST-ASZD.git}"
 BELL_GIT_REF="${BELL_GIT_REF:-deploy}"
-BELL_DNS="${BELL_DNS:-192.168.16.2}"
+BELL_DNS="${BELL_DNS:-8.8.8.8}"
 BELL_ADDRESS="192.168.17.250/23"
 BELL_GATEWAY="192.168.16.2"
 APP_ROOT=/opt/bell
@@ -146,9 +146,30 @@ ln -sfn /etc/nginx/sites-available/bell /etc/nginx/sites-enabled/bell
 nginx -t
 
 log "Konfiguracja adresu 192.168.17.250/23"
-NET_IFACE="${BELL_NET_IFACE:-$(ip -o route show default 2>/dev/null | awk 'NR == 1 {print $5}')}"
-[[ -n "$NET_IFACE" ]] || die "Nie wykryto interfejsu; ustaw BELL_NET_IFACE=eth0 albo wlan0."
+NM_ACTIVE=false
 if command -v nmcli >/dev/null 2>&1 && systemctl is-active --quiet NetworkManager; then
+    NM_ACTIVE=true
+fi
+
+if [[ -n "$BELL_NET_IFACE" ]]; then
+    NET_IFACE="$BELL_NET_IFACE"
+elif [[ "$NM_ACTIVE" == true ]]; then
+    NET_IFACE="$(nmcli -t -f DEVICE,TYPE device status \
+        | awk -F: '$2 == "ethernet" && $1 != "lo" {print $1; exit}')"
+else
+    NET_IFACE=""
+    for candidate in /sys/class/net/*; do
+        iface="${candidate##*/}"
+        [[ "$iface" == lo || -e "$candidate/wireless" || ! -e "$candidate/device" ]] && continue
+        NET_IFACE="$iface"
+        break
+    done
+fi
+[[ -n "$NET_IFACE" ]] || die "Nie wykryto interfejsu kablowego Ethernet."
+
+if [[ "$NM_ACTIVE" == true ]]; then
+    DEVICE_TYPE="$(nmcli -g GENERAL.TYPE device show "$NET_IFACE" 2>/dev/null || true)"
+    [[ "$DEVICE_TYPE" == ethernet ]] || die "Interfejs '$NET_IFACE' nie jest połączeniem kablowym Ethernet."
     CONNECTION="$(nmcli -g GENERAL.CONNECTION device show "$NET_IFACE" | head -n1)"
     if [[ -z "$CONNECTION" || "$CONNECTION" == -- ]]; then
         DEVICE_TYPE="$(nmcli -g GENERAL.TYPE device show "$NET_IFACE" | head -n1)"
@@ -163,6 +184,9 @@ if command -v nmcli >/dev/null 2>&1 && systemctl is-active --quiet NetworkManage
     fi
     NETWORK_APPLY=(nmcli connection up "$CONNECTION" ifname "$NET_IFACE")
 elif command -v dhcpcd >/dev/null 2>&1; then
+    [[ "$NET_IFACE" != lo && ! -e "/sys/class/net/$NET_IFACE/wireless" \
+        && -e "/sys/class/net/$NET_IFACE/device" ]] \
+        || die "Interfejs '$NET_IFACE' nie jest fizycznym interfejsem kablowym Ethernet."
     python3 - "$NET_IFACE" "$BELL_ADDRESS" "$BELL_GATEWAY" "$BELL_DNS" <<'PY'
 from pathlib import Path
 import sys
