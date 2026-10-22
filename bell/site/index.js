@@ -329,6 +329,7 @@ function StartBells() {
         if (brakering.getTime() > Date.now()) bellhours.push([brakering, false]);
       });
       bellhours.sort((a, b) => a[0].getTime() - b[0].getTime());
+      ScreenMessage();
       // Cykl Dzonienia
       function Schedule() {
         if (bellhours.length == 0 || workingcycle != cyklpracy) return;
