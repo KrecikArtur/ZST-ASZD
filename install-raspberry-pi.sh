@@ -41,9 +41,11 @@ git clone --depth 1 --filter=blob:none --sparse --branch "$BELL_GIT_REF" \
 git -C "$TMP_ROOT/repository" sparse-checkout set bell deploy
 REPO="$TMP_ROOT/repository"
 [[ -f "$REPO/bell/site/index.js" ]] || die "Repozytorium nie zawiera bell/site/index.js."
+[[ -f "$REPO/bell/site/startup-display.js" ]] || die "Brakuje skryptu ekranu startowego."
 [[ -f "$REPO/bell/site/public/index.html" ]] || die "Brakuje gotowego bell/site/public/index.html."
 [[ -f "$REPO/bell/backend/manage.py" ]] || die "Brakuje backendu Django."
 [[ -f "$REPO/deploy/bell-site.service" ]] || die "Brakuje szablonów usług w deploy/."
+[[ -f "$REPO/deploy/bell-startup-display.service" ]] || die "Brakuje usługi ekranu startowego."
 
 log "Tworzenie konta usługi i kopiowanie gotowych plików"
 getent group gpio >/dev/null || groupadd --system gpio
@@ -135,6 +137,7 @@ udevadm control --reload-rules
 udevadm trigger --subsystem-match=gpio
 install -d -o root -g root -m 0755 /usr/local/lib/bell
 install -o root -g root -m 0755 "$REPO/deploy/wait-for-time-sync.sh" /usr/local/lib/bell/wait-for-time-sync.sh
+install -o root -g root -m 0644 "$REPO/deploy/bell-startup-display.service" /etc/systemd/system/bell-startup-display.service
 install -o root -g root -m 0644 "$REPO/deploy/bell-backend.service" /etc/systemd/system/bell-backend.service
 install -o root -g root -m 0644 "$REPO/deploy/bell-site.service" /etc/systemd/system/bell-site.service
 install -o root -g root -m 0644 "$REPO/deploy/nginx-bell.conf" /etc/nginx/sites-available/bell
@@ -189,7 +192,7 @@ fi
 
 log "Włączanie Nginx i usług aplikacji"
 systemctl daemon-reload
-systemctl enable bell-backend.service bell-site.service nginx
+systemctl enable bell-startup-display.service bell-backend.service bell-site.service nginx
 systemctl restart nginx
 systemctl restart bell-backend.service
 systemctl restart bell-site.service

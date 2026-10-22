@@ -1,9 +1,7 @@
 //Rozruch wyswietlacza
 const LCDSCREEN = require('raspberrypi-liquid-crystal');
 const lcd = new LCDSCREEN( 1, 0x27, 16, 2 );
-lcd.beginSync();
-lcd.clearSync();
-lcd.printSync(" Wczytywanie... ");
+let displayInitialized = false;
 //Wczytanie bazy danych
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
@@ -422,6 +420,10 @@ function fire(workingcycle = cyklpracy) {
 }
 //Obsluga wyswietlacza
 function ScreenMessage() {
+  if (!displayInitialized) {
+    lcd.beginSync();
+    displayInitialized = true;
+  }
   if (planMenuMode !== null && activeMode === STATUS.IDLE) {
     lcd.clearSync();
     lcd.printSync('Plan:');

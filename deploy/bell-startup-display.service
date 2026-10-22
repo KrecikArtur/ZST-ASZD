@@ -1,0 +1,23 @@
+[Unit]
+Description=School bell startup display progress
+Wants=network-online.target
+After=local-fs.target systemd-modules-load.service
+Before=network-online.target bell-backend.service bell-site.service
+
+[Service]
+Type=simple
+User=bell
+Group=bell
+SupplementaryGroups=i2c
+WorkingDirectory=/opt/bell/site
+ExecStartPre=/usr/bin/node /opt/bell/site/startup-display.js --show-network-stage
+ExecStart=/usr/bin/node /opt/bell/site/startup-display.js
+Restart=on-failure
+RestartSec=5
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target
