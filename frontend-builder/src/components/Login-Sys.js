@@ -3,8 +3,6 @@ import { jwtDecode } from "jwt-decode";
 import { Navigate } from "react-router-dom";
 import axios from "axios";
 
-const apiBase = process.env.REACT_APP_API_BASE_URL
-  ?? (process.env.NODE_ENV === "development" ? "" : "http://bell.local");
 let refreshRequest = null;
 
 function tokenIsValid(token) {
@@ -27,7 +25,7 @@ export async function getAccessToken() {
   }
 
   if (!refreshRequest) {
-    refreshRequest = axios.post(`${apiBase}/api/token/refresh/`, { refresh })
+    refreshRequest = axios.post("/api/token/refresh/", { refresh })
       .then(({ data }) => {
         setTokens(data.access, data.refresh || refresh);
         return data.access;
@@ -42,7 +40,7 @@ export async function getAccessToken() {
 }
 
 export async function login(username, password) {
-  const { data } = await axios.post(`${apiBase}/api/token/`, { username, password });
+  const { data } = await axios.post("/api/token/", { username, password });
   setTokens(data.access, data.refresh);
   return data.access;
 }
@@ -87,7 +85,7 @@ export function RequireAuth({ children }) {
 
 export async function register(username, password, code) {
   try {
-    const { data } = await axios.post(`${apiBase}/api/register/`, { username, password, code });
+    const { data } = await axios.post("/api/register/", { username, password, code });
     return data.response;
   } catch (error) {
     return error.response?.data?.response || "error";
@@ -106,7 +104,7 @@ export async function UseData(type, url, data = {}) {
   const path = query === undefined ? normalizedPath : `${normalizedPath}?${query}`;
   const response = await axios({
     method,
-    url: `${apiBase}/api/${path}`,
+    url: `/api/${path}`,
     ...(type === "get" || type === "delete" ? {} : { data }),
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -115,7 +113,7 @@ export async function UseData(type, url, data = {}) {
 
 export async function frontPing(url, data) {
   try {
-    const response = await axios.post(`${apiBase}/${url.replace(/^\/+/, "")}`, data);
+    const response = await axios.post(`/${url.replace(/^\/+/, "")}`, data);
     return response.data;
   } catch (error) {
     return { error: true, message: error.message };
