@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Row, Col, Button, Modal } from 'react-bootstrap';
 import { UseData, frontPing } from "./Login-Sys";
 import { showToast } from './Toaster';
@@ -7,6 +7,27 @@ const ActionButtons = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingLabel, setPendingLabel] = useState("");
+  const [activeStatus, setActiveStatus] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshStatus = async () => {
+      try {
+        const status = await UseData("get", "belldata/status");
+        if (!cancelled) setActiveStatus(status.value);
+      } catch {
+        // Keep the current button state if the status endpoint is temporarily unavailable.
+      }
+    };
+
+    refreshStatus();
+    const intervalId = setInterval(refreshStatus, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const openConfirm = (statusValue, label) => {
     setPendingAction(statusValue);
@@ -18,6 +39,7 @@ const ActionButtons = () => {
     if (pendingAction === null) return;
     try {
       await UseData("patch", "belldata/status", { value: pendingAction });
+      setActiveStatus(pendingAction);
       await frontPing("bell/reload", {});
       showToast("Akcja Wykonana!", "success");
       console.log("Bell reloaded via frontPing");
@@ -54,7 +76,10 @@ const ActionButtons = () => {
 
           <Col xs={6}>
             <Button
-              className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
+              variant={activeStatus === "alarm_pozarowy" ? "danger" : undefined}
+              className={activeStatus === "alarm_pozarowy"
+                ? "w-100"
+                : "w-100 bg-secondary-subtle border border-primary-subtle text-primary"}
               onClick={() => openConfirm("alarm_pozarowy", "Alarm Pożarowy")}
             >
               Alarm Pożarowy
@@ -63,7 +88,10 @@ const ActionButtons = () => {
 
           <Col xs={6}>
             <Button
-              className="w-100 bg-secondary-subtle border border-primary-subtle text-primary"
+              variant={activeStatus === "alarm_barykada" ? "danger" : undefined}
+              className={activeStatus === "alarm_barykada"
+                ? "w-100"
+                : "w-100 bg-secondary-subtle border border-primary-subtle text-primary"}
               onClick={() => openConfirm("alarm_barykada", "Alarm Barykada")}
             >
               Alarm Barykada
