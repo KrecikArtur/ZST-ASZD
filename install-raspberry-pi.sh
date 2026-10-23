@@ -8,9 +8,7 @@ set -Eeuo pipefail
 BELL_GIT_URL="${BELL_GIT_URL:-https://github.com/KrecikArtur/ZST-ASZD.git}"
 BELL_GIT_REF="${BELL_GIT_REF:-deploy}"
 BELL_NET_IFACE="${BELL_NET_IFACE:-}"
-BELL_DNS="${BELL_DNS:-8.8.8.8}"
-BELL_ADDRESS="192.168.17.250/23"
-BELL_GATEWAY="192.168.16.2"
+BELL_DNS_OVERRIDE="${BELL_DNS:-}"
 APP_ROOT=/opt/bell
 DATA_ROOT=/var/lib/bell
 TMP_ROOT="$(mktemp -d)"
@@ -48,6 +46,22 @@ REPO="$TMP_ROOT/repository"
 [[ -f "$REPO/bell/backend/api/migrations/__init__.py" ]] || die "Brakuje bell/backend/api/migrations/__init__.py; Django nie wykryje migracji aplikacji api."
 [[ -f "$REPO/deploy/bell-site.service" ]] || die "Brakuje szablonów usług w deploy/."
 [[ -f "$REPO/deploy/bell-startup-display.service" ]] || die "Brakuje usługi ekranu startowego."
+[[ -f "$REPO/deploy/network.conf" ]] || die "Brakuje deploy/network.conf z konfiguracją sieci."
+
+# shellcheck disable=SC1090
+source "$REPO/deploy/network.conf"
+BELL_DNS="${BELL_DNS_OVERRIDE:-${BELL_DNS:-}}"
+[[ -n "$BELL_DNS" ]] || die "Nie ustawiono DNS w deploy/network.conf."
+BELL_ADDRESS="$(python3 - "$BELL_IP" "$BELL_NETMASK" "$BELL_GATEWAY" <<'PY'
+from ipaddress import IPv4Address, IPv4Interface
+import sys
+
+address, netmask, gateway = sys.argv[1:]
+interface = IPv4Interface(f'{address}/{netmask}')
+IPv4Address(gateway)
+print(interface)
+PY
+)"
 
 log "Tworzenie konta usługi i kopiowanie gotowych plików"
 getent group gpio >/dev/null || groupadd --system gpio
@@ -147,7 +161,7 @@ rm -f /etc/nginx/sites-enabled/default
 ln -sfn /etc/nginx/sites-available/bell /etc/nginx/sites-enabled/bell
 nginx -t
 
-log "Konfiguracja adresu 192.168.17.250/23"
+log "Konfiguracja adresu $BELL_ADDRESS"
 NM_ACTIVE=false
 if command -v nmcli >/dev/null 2>&1 && systemctl is-active --quiet NetworkManager; then
     NM_ACTIVE=true
