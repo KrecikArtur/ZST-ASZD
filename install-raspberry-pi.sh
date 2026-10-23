@@ -45,6 +45,7 @@ REPO="$TMP_ROOT/repository"
 [[ -f "$REPO/bell/site/startup-display.js" ]] || die "Brakuje skryptu ekranu startowego."
 [[ -f "$REPO/bell/site/public/index.html" ]] || die "Brakuje gotowego bell/site/public/index.html."
 [[ -f "$REPO/bell/backend/manage.py" ]] || die "Brakuje backendu Django."
+[[ -f "$REPO/bell/backend/api/migrations/__init__.py" ]] || die "Brakuje bell/backend/api/migrations/__init__.py; Django nie wykryje migracji aplikacji api."
 [[ -f "$REPO/deploy/bell-site.service" ]] || die "Brakuje szablonów usług w deploy/."
 [[ -f "$REPO/deploy/bell-startup-display.service" ]] || die "Brakuje usługi ekranu startowego."
 
